@@ -1,0 +1,10 @@
+# Entornos virtuales
+venv/
+env/
+
+# Modelos y archivos pesados
+*.pkl
+__pycache__/
+
+# Archivos de sistema o temporales
+.DS_Store
