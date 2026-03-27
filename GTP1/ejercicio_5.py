@@ -13,8 +13,8 @@ def decision(w, x):
 
 def main():
     base_path = os.path.dirname(__file__)
-    ruta_train = os.path.join(base_path, 'diabetes_trn.csv')
-    ruta_test = os.path.join(base_path, 'diabetes_tst.csv')
+    ruta_train = os.path.join(base_path, '../data/diabetes_trn.csv')
+    ruta_test = os.path.join(base_path, '../data/diabetes_tst.csv')
     X_train, y_train = cargar_datos_csv(ruta_train)
     X_test, y_test = cargar_datos_csv(ruta_test)
 
@@ -25,11 +25,33 @@ def main():
     y_pred = model.transform(X_test)
     print(model.score(X_test, y_test))
 
-    plt.scatter(y_pred, y_test)
+    # scatter
+    plt.scatter(y_test, y_pred)
+
+    # recta ideal (y = x)
+    min_val = min(y_test.min(), y_pred.min())
+    max_val = max(y_test.max(), y_pred.max())
+
+    plt.plot([min_val, max_val], [min_val, max_val], linestyle='--')
+
+    plt.xlabel("Valor real")
+    plt.ylabel("Predicción")
+    plt.title("Predicción vs Real")
+
+    plt.grid()
     plt.show()
 
+    residuos = (y_test - y_pred).flatten()
 
+    plt.scatter(y_pred, residuos)
+    plt.axhline(0)
 
+    plt.xlabel("Predicción")
+    plt.ylabel("Residuo (error)")
+    plt.title("Análisis de residuos")
+
+    plt.grid()
+    plt.show()
 
 if __name__ == "__main__":
     main()

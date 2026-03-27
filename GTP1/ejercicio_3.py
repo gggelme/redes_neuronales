@@ -7,6 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from algorithms.auxiliares import *
 from algorithms.simple_perceptron import simple_perceptron
 
+import os
+
 def decision(w, x):
     return -w[1]/w[2] * x  + w[0]/w[2]
 
@@ -16,22 +18,23 @@ def main():
     base_path = os.path.dirname(__file__) #donde esta este archivo
 
 
-    ruta_test_5 = os.path.join(base_path, 'OR_tst.csv')
+    ruta_test_5 = os.path.join(base_path, '../data/OR_tst.csv')
     X_test_5, y_test_5 = cargar_datos_csv(ruta_test_5)
     
-    ruta_train_50 = os.path.join(base_path, 'OR_50_trn.csv')
-    ruta_test_50 = os.path.join(base_path, 'OR_50_tst.csv')
+    ruta_train_50 = os.path.join(base_path, '../data/OR_50_trn.csv')
+    ruta_test_50 = os.path.join(base_path, '../data/OR_50_tst.csv')
 
     X_train_50, y_train_50 = cargar_datos_csv(ruta_train_50)
     X_test_50, y_test_50 = cargar_datos_csv(ruta_test_50)
 
-    ruta_train_90 = os.path.join(base_path, 'OR_90_trn.csv')
-    ruta_test_90 = os.path.join(base_path, 'OR_90_tst.csv')
+    ruta_train_90 = os.path.join(base_path, '../data/OR_90_trn.csv')
+    ruta_test_90 = os.path.join(base_path, '../data/OR_90_tst.csv')
     X_train_90, y_train_90 = cargar_datos_csv(ruta_train_90)
     X_test_90, y_test_90 = cargar_datos_csv(ruta_test_90)
 
-    ruta_modelo_5 = os.path.join(base_path, 'models/OR_5_desvio.pkl')
+    ruta_modelo_5 = os.path.join(base_path, '../models/OR_5_desvio.pkl')
 
+    
     modelo_5 = cargar_modelo(ruta_modelo_5)
 
     
@@ -56,6 +59,19 @@ def main():
     )
 
     modelo_90.fit(X_train_90, y_train_90)
+
+
+     # guardar modelo 90 para usar la actividad 4
+    carpeta_models = os.path.join(base_path, '../models')
+
+    # Nombre sugerido: OR_90_sign.pkl
+    ruta_guardado_50 = os.path.join(carpeta_models, 'OR_50_sign.pkl')
+    ruta_guardado_90 = os.path.join(carpeta_models, 'OR_90_sign.pkl')
+
+    guardar_modelo(ruta_guardado_50, modelo_50)
+    guardar_modelo(ruta_guardado_90, modelo_90)
+
+    
 
     print (f"""5 : {modelo_5.score(X_test_5, y_test_5)}
            50: {modelo_50.score(X_test_50, y_test_50)}
@@ -147,18 +163,7 @@ def main():
     plt.show()
 
 
-    # guardar modelo 90 para usar la actividad 4
-    carpeta_models = os.path.join(base_path, 'models')
-    
-    if not os.path.exists(carpeta_models):
-        os.makedirs(carpeta_models)
-        print(f"Carpeta creada: {carpeta_models}")
-
-    # Nombre sugerido: OR_90_sign.pkl
-    ruta_guardado_90 = os.path.join(carpeta_models, 'OR_90_sign.pkl')
-
-    with open(ruta_guardado_90, 'wb') as f:
-        pickle.dump(modelo_90, f)
+   
     
     print(f"Modelo de 90% (Sign) guardado exitosamente en: {ruta_guardado_90}")
 

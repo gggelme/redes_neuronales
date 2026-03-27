@@ -7,6 +7,7 @@ class simple_perceptron():
         self.max_epochs = max_epochs
         self.error_threshold = error_threshold
         self.weights = None
+        self.weights_history = []
         self.bias = None
         self.batch_size = batch_size
         if activate_function == 'identity':
@@ -40,8 +41,9 @@ class simple_perceptron():
         bias_column = -1*np.ones((n_samples, 1))
         X_bias = np.hstack((bias_column, X)) #primera columna con bias -1
 
-        self.weights = np.zeros((n_features + 1, 1)) #vector columna
+        self.weights = np.random.rand(n_features + 1, 1) -0.5
         self.epoch_error = []
+        self.weights_history = [self.weights.copy()]
         for epoch in range(self.max_epochs):
             epoch_errors = []
             for i in range(0, n_samples, self.batch_size):
@@ -63,6 +65,8 @@ class simple_perceptron():
                 grad_vector= e_batch * phi_prime #producto elemento a elemento
             
                 self.weights -= 2 * self.learning_rate * X_batch.T @ grad_vector
+
+                self.weights_history.append(self.weights.copy())
             current_epoch_error = np.mean(epoch_errors)
             self.epoch_error.append(current_epoch_error)
 
@@ -168,6 +172,7 @@ class simple_perceptron():
         labels_pred = np.where(y_pred >= 0, 1, -1)
         labels_real = np.where(y_real >= 0, 1, -1)
         return np.mean(labels_pred != labels_real)
+    
     
     
     

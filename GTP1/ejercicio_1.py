@@ -28,8 +28,8 @@ from algorithms.auxiliares import *
 def main():
 
     base_path = os.path.dirname(__file__) #donde esta este archivo
-    ruta_train = os.path.join(base_path, 'OR_trn.csv')
-    ruta_test = os.path.join(base_path, 'OR_tst.csv')
+    ruta_train = os.path.join(base_path, '..\data\OR_trn.csv')
+    ruta_test = os.path.join(base_path, '..\data\OR_tst.csv')
     
     X_train, y_train = cargar_datos_csv(ruta_train)
     X_test, y_test = cargar_datos_csv(ruta_test)
@@ -52,11 +52,10 @@ def main():
         y_real= y_test
     ))
 
-    carpeta_modelo = os.path.join(os.path.dirname(__file__), 'models')
+    carpeta_modelo = os.path.join(os.path.dirname(__file__), '../models')
     ruta_archivo = os.path.join(carpeta_modelo, 'OR_5_desvio.pkl')
 
-    with open(ruta_archivo, 'wb') as f:
-        pickle.dump(modelo, f)
+    guardar_modelo(ruta_archivo, modelo)
     
     print(f"Modelo guardado exitosamente en: {ruta_archivo}")
 

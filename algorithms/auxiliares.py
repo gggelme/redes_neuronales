@@ -48,3 +48,7 @@ def cargar_modelo(ruta_completa):
     with open(ruta_completa, 'rb') as f:
         modelo = pickle.load(f)
     return modelo
+
+def guardar_modelo(ruta_completa, modelo):
+    with open(ruta_completa, 'wb') as f:
+        pickle.dump(modelo, f)
