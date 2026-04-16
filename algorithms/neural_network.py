@@ -10,7 +10,7 @@ class layer():
     def __init__(self, n_neurons, n_inputs, activation_function):
         self.n_neurons = n_neurons
         self.n_inputs = n_inputs
-        self.weights = np.random.uniform(-0.5, 0.5, (self.n_neurons, self.n_inputs+1))
+        self.weights = np.random.uniform(-0.85, 0.85, (self.n_neurons, self.n_inputs+1))
         self.activate_function_name = activation_function  
         self.deltas = np.zeros((n_neurons,1))
 
@@ -115,7 +115,7 @@ class neural_network():
                 self.backward_propagation(y_current)
                 self._update_weights()
             epoch_error = self.calculate_error_epoc(X, y)
-            print(f"Época: {epoch} - Errorcito: {epoch_error}")
+            #print(f"Época: {epoch} - Errorcito: {epoch_error}")
             self.epoch_error.append(epoch_error)
             if epoch_error < self.error_threshold:
                 break
@@ -125,41 +125,78 @@ class neural_network():
         y_pred = []
         for i in range(X.shape[0]):
             x_curr = np.array(X[i]).reshape(-1,1) #hacerlo columna
-            y_pred.append(self.forward_propagation(x_curr))
+            y_pred.append(self.forward_propagation(x_curr).flatten())
 
         return np.array(y_pred)
          
+
     def score(self, X, y):
-        #funcion de score para clasificacion / regresion
-        is_classification = False
+        correct = 0
+        total = len(X)
+        n_salidas = y.shape[1]
+
+        es_clasificacion = False
         if self.layers[-1].activate_function_name in ['sigmoid', 'symmetry sigmoid', 'sign']:
-            is_classification = True
+            es_clasificacion = True
 
-        if is_classification == True:
-            match self.layers[-1].activate_function_name:
-                #diferenciamos casos para la funcion de salida
-                case 'symmetry sigmoid' | 'sign':
-                    correct = 0
-                    total = len(X)
+        if n_salidas > 1 and es_clasificacion:
+            print("Caso 1")
+            for i in range(total):
+                x = X[i].reshape(-1,1)
+                output = self.forward_propagation(x)
+                # [salida_sigmoide para versicolor, salida_sigmoide para otra]
+                pred_class = np.argmax(output)      
+                true_class = np.argmax(y[i])       
 
-                    for i in range(total):
-                        x = X[i].reshape(-1,1)
-                        output = self.forward_propagation(x)
+                if pred_class == true_class:
+                    correct += 1
+            # accuracy
+            return correct / total
+        
+        if n_salidas == 1 and es_clasificacion:
+            print("Caso 2")
+            # clasificación binaria con 1 salida
+            for i in range(total):
+                x = X[i].reshape(-1,1)
+                output = self.forward_propagation(x)
 
-                        pred_class = np.argmax(output)      # índice del mayor
-                        true_class = np.argmax(y[i])        # índice del 1 (o del 1 en [-1,1])
+                y_pred = output.item()
+                y_true = y[i].item()
 
-                        if pred_class == true_class:
-                            correct += 1
-                    return correct / total #retorna la acuracy
-                case 'sigmoid':
-                    #tiene los indices de 0,1
-                    pass
-        else:
-            #identity, relu
-            y_pred = self.transform(X).flatten()
-            mse = np.mean((y_pred - y.flatten())**2)
+                # Definimos umbral según activación
+                if self.layers[-1].activate_function_name in ['sigmoid']:
+                    pred_class = 1 if y_pred >= 0.5 else 0
+                elif self.layers[-1].activate_function_name in ['symmetry sigmoid']:
+                    pred_class = 1 if y_pred >= 0 else -1
+                elif self.layers[-1].activate_function_name in ['sign']:
+                    pred_class = 1 if y_pred >= 0 else -1
+
+                if pred_class == y_true:
+                    correct += 1
+
+            # accuracy
+            return correct / total
+
+
+        if n_salidas == 1 and not es_clasificacion:
+            print("Caso 3")
+            # regresión → usamos MSE como score
+            error = 0.0
+
+            for i in range(total):
+                x = X[i].reshape(-1,1)
+                output = self.forward_propagation(x)
+
+                y_pred = output.item()
+                y_true = y[i].item()
+
+                error += (y_pred - y_true) ** 2
+
+            mse = error / total
+
             return mse
+        
+        return None
 
 
 
@@ -222,6 +259,7 @@ class neural_network():
         #predicciones renglon por renglon
         for i in range(X.shape[0]):
             y_pred.append(self.forward_propagation(X[i,:].reshape(-1,1)).flatten()) #pasar como columna
+            
 
         y_pred = np.array(y_pred)
         error = (y_pred-y)**2
