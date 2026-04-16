@@ -4,9 +4,12 @@ import numpy as np
 import csv
 import pickle
 
-def cargar_datos_csv(ruta_completa):
-    " este archivo extrae datos de un csv escrito de la forma X|Y"
-    
+import numpy as np
+import csv
+
+def cargar_datos_csv(ruta_completa, salidas=1):
+    """Extrae datos de un csv con formato X | Y(s), permitiendo múltiples salidas"""
+
     X = []
     y = []
     
@@ -14,29 +17,28 @@ def cargar_datos_csv(ruta_completa):
         lector = csv.reader(f)
         primera_fila = next(lector)
         
-        # Detectar si la primera fila es header (contiene strings no numéricos)
-        es_header = False
+        # Detectar header
         try:
-            # Intentar convertir el primer valor a float
             float(primera_fila[0])
             es_header = False
         except ValueError:
             es_header = True
         
-        # Procesar según corresponda
-        if not es_header:
-            # Procesar primera fila como datos
-            datos_fila = [float(val) for val in primera_fila]
-            X.append(datos_fila[:-1]) 
-            y.append(datos_fila[-1])
+        # Función auxiliar para procesar filas
+        def procesar_fila(fila):
+            datos = [float(val) for val in fila]
+            X.append(datos[:-salidas])
+            y.append(datos[-salidas:])
         
-        # Procesar el resto de filas
+        # Procesar primera fila si no es header
+        if not es_header:
+            procesar_fila(primera_fila)
+        
+        # Procesar resto
         for fila in lector:
-            datos_fila = [float(val) for val in fila]
-            X.append(datos_fila[:-1]) 
-            y.append(datos_fila[-1])  
-            
-    return np.array(X), np.array(y).reshape(-1, 1)
+            procesar_fila(fila)
+    
+    return np.array(X), np.array(y)
 
 
 def cargar_modelo(ruta_completa):

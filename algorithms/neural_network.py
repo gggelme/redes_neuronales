@@ -101,11 +101,16 @@ class neural_network():
         self.learning_rate = learning_rate
         self.error_threshold = error_threshold
         self.epoch_error = []
+        self.epoch_classification_error = []
 
     def fit(self, X, y):
         if y.ndim ==1:
             y = y.reshape(-1,1)
         
+        es_clasificacion = False
+        if self.layers[-1].activate_function_name in ['sigmoid', 'symmetry sigmoid', 'sign']:
+            es_clasificacion = True
+
         #X = np.hstack((-1*np.ones((X.shape[0], 1)), X))
         for epoch in range(self.max_epoch):
             for i in range(X.shape[0]):
@@ -115,6 +120,9 @@ class neural_network():
                 self.backward_propagation(y_current)
                 self._update_weights()
             epoch_error = self.calculate_error_epoc(X, y)
+            if es_clasificacion:
+                epoch_classification_error = 1 - self.score(X, y)
+                self.epoch_classification_error.append(epoch_classification_error)
             #print(f"Época: {epoch} - Errorcito: {epoch_error}")
             self.epoch_error.append(epoch_error)
             if epoch_error < self.error_threshold:
@@ -140,11 +148,10 @@ class neural_network():
             es_clasificacion = True
 
         if n_salidas > 1 and es_clasificacion:
-            print("Caso 1")
             for i in range(total):
                 x = X[i].reshape(-1,1)
                 output = self.forward_propagation(x)
-                # [salida_sigmoide para versicolor, salida_sigmoide para otra]
+                # [salida_sigmoide para versicolor, salida_sigmoide para otra, salida_sigmoide final]
                 pred_class = np.argmax(output)      
                 true_class = np.argmax(y[i])       
 
@@ -154,7 +161,6 @@ class neural_network():
             return correct / total
         
         if n_salidas == 1 and es_clasificacion:
-            print("Caso 2")
             # clasificación binaria con 1 salida
             for i in range(total):
                 x = X[i].reshape(-1,1)
@@ -179,7 +185,6 @@ class neural_network():
 
 
         if n_salidas == 1 and not es_clasificacion:
-            print("Caso 3")
             # regresión → usamos MSE como score
             error = 0.0
 
@@ -263,7 +268,7 @@ class neural_network():
 
         y_pred = np.array(y_pred)
         error = (y_pred-y)**2
-        error = error.sum()
+        error = error.sum()/len(error)
         return error
         
 
