@@ -4,8 +4,37 @@ import numpy as np
 import csv
 import pickle
 
-import numpy as np
-import csv
+from datetime import datetime 
+
+def parse_valor(val):
+    val = val.strip()
+
+    if val == "" or val.lower() in ["nan", "na", "null"]:
+        return np.nan
+
+    # 🔥 detectar números tipo 2.987.201,50
+    if "." in val and "," in val:
+        try:
+            val = val.replace(".", "").replace(",", ".")
+            return float(val)
+        except:
+            pass
+
+    # intentar float
+    try:
+        return float(val)
+    except ValueError:
+        pass
+
+    # intentar fecha (formato dd.mm.yyyy)
+    for fmt in ["%d.%m.%Y", "%d/%m/%Y", "%Y-%m-%d"]:
+        try:
+            return datetime.strptime(val, fmt).timestamp()
+        except ValueError:
+            continue
+
+    # fallback
+    return np.nan
 
 def cargar_datos_csv(ruta_completa, salidas=1):
     """Extrae datos de un csv con formato X | Y(s), permitiendo múltiples salidas"""
@@ -26,9 +55,15 @@ def cargar_datos_csv(ruta_completa, salidas=1):
         
         # Función auxiliar para procesar filas
         def procesar_fila(fila):
-            datos = [float(val) for val in fila]
-            X.append(datos[:-salidas])
-            y.append(datos[-salidas:])
+            fila = [val for val in fila if val.strip() != ""]
+
+            datos = [parse_valor(val) for val in fila]
+            
+            if salidas >= 1:
+                X.append(datos[:-salidas])
+                y.append(datos[-salidas:])
+            else:
+                X.append(datos)
         
         # Procesar primera fila si no es header
         if not es_header:
@@ -38,7 +73,7 @@ def cargar_datos_csv(ruta_completa, salidas=1):
         for fila in lector:
             procesar_fila(fila)
     
-    return np.array(X), np.array(y)
+    return X, y
 
 
 def cargar_modelo(ruta_completa):
