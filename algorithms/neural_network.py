@@ -10,7 +10,7 @@ class layer():
     def __init__(self, n_neurons, n_inputs, activation_function):
         self.n_neurons = n_neurons
         self.n_inputs = n_inputs
-        self.weights = np.random.uniform(-0.85, 0.85, (self.n_neurons, self.n_inputs+1))
+        self.weights = np.random.uniform(-0.1, 0.1, (self.n_neurons, self.n_inputs+1))
         self.activate_function_name = activation_function  
         self.deltas = np.zeros((n_neurons,1))
 
@@ -40,12 +40,15 @@ class layer():
 
         input_bias = np.vstack((-1, inputs)) #agrego bias a la entrada
         
-        self.outputs = self.activate(self.weights @ input_bias)
+        # Añado el v
+        self.v = self.weights @ input_bias
+        self.outputs = self.activate(self.v)
         return self.outputs #retorna columna
     
 
     def calculate_deltas(self, error):
-        salida = self.activate_derivative(self.outputs) #aca esta el 1/2 en la derivada
+        # Uso v
+        salida = self.activate_derivative(self.v) #aca esta el 1/2 en la derivada
          
         for i in range(salida.shape[0]):
             self.deltas[i] = error[i] * salida[i]
@@ -137,7 +140,56 @@ class neural_network():
 
         return np.array(y_pred)
          
+    def confusion_matrix(self, X, y):
+        correct = 0
+        total = len(X)
+        n_salidas = y.shape[1]
 
+        if n_salidas > 1:
+            cm = np.zeros((n_salidas,n_salidas))
+        else:
+            cm = np.zeros((2,2))
+
+        if n_salidas > 1:
+            for i in range(total):
+                x = X[i].reshape(-1,1)
+                output = self.forward_propagation(x)
+                # [salida_sigmoide para versicolor, salida_sigmoide para otra, salida_sigmoide final]
+                pred_class = np.argmax(output)      
+                true_class = np.argmax(y[i])       
+                
+                cm[true_class, pred_class] += 1
+        
+        if n_salidas == 1:
+            # clasificación binaria con 1 salida
+            for i in range(total):
+                x = X[i].reshape(-1,1)
+                output = self.forward_propagation(x)
+
+                y_pred = output.item()
+                y_true = y[i].item()
+
+                # Definimos umbral según activación
+                if self.layers[-1].activate_function_name in ['sigmoid']:
+                    pred_class = 1 if y_pred >= 0.5 else 0
+                elif self.layers[-1].activate_function_name in ['symmetry sigmoid']:
+                    pred_class = 1 if y_pred >= 0 else -1
+                elif self.layers[-1].activate_function_name in ['sign']:
+                    pred_class = 1 if y_pred >= 0 else -1
+
+                idx = int(y_true)
+                if idx < 0:
+                    idx = 0
+
+                idx_pred = int(pred_class)
+                if idx_pred < 0:
+                    idx_pred = 0                
+
+                if pred_class == y_true:
+                    cm[idx, idx_pred] += 1
+                else:
+                    cm[idx, idx_pred] += 1
+        return cm
     def score(self, X, y):
         correct = 0
         total = len(X)

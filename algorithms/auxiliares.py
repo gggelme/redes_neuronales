@@ -9,6 +9,9 @@ from datetime import datetime
 def parse_valor(val):
     val = val.strip()
 
+    if val == '?':
+        return -1
+
     if val == "" or val.lower() in ["nan", "na", "null"]:
         return np.nan
 
