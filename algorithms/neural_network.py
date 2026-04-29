@@ -85,10 +85,8 @@ class layer():
         return np.zeros_like(v)
     
 
-
-
 class neural_network():
-    def __init__(self, layers_config, size_input, max_epoch=1000, learning_rate =0.01, error_threshold=1e-6):
+    def __init__(self, layers_config, size_input, validation_proportion = None, paciencia=None, max_epoch=1000, learning_rate =0.01, error_threshold=1e-6):
         """"Layers config es una lista de tuplas (n_neurons, activation_function)"""
         self.layers = []
         for i in range(len(layers_config)):
@@ -103,8 +101,12 @@ class neural_network():
         self.max_epoch = max_epoch
         self.learning_rate = learning_rate
         self.error_threshold = error_threshold
+        self.paciencia = paciencia
         self.epoch_error = []
         self.epoch_classification_error = []
+        self.epoch_error_val = []
+        self.validation_proportion = validation_proportion
+        self.idx_shuffle = None
 
     def fit(self, X, y):
         if y.ndim ==1:
@@ -113,6 +115,23 @@ class neural_network():
         es_clasificacion = False
         if self.layers[-1].activate_function_name in ['sigmoid', 'symmetry sigmoid', 'sign']:
             es_clasificacion = True
+
+        impaciencia_acumulada = 0
+        if self.validation_proportion is not None:
+            # Splitteamos en Train y Validation
+
+            size = X.shape[0]
+            if self.idx_shuffle is not None:
+                idx = self.idx_shuffle
+            else:
+                idx = np.arange(X.shape[0])
+                np.random.shuffle(idx)
+            
+            N = int(size * self.validation_proportion)
+            X_val, y_val = X[idx[:N], :], y[idx[:N], :]
+            
+            X, y = X[idx[N:], :], y[idx[N:], :]
+
 
         #X = np.hstack((-1*np.ones((X.shape[0], 1)), X))
         for epoch in range(self.max_epoch):
@@ -123,12 +142,25 @@ class neural_network():
                 self.backward_propagation(y_current)
                 self._update_weights()
             epoch_error = self.calculate_error_epoc(X, y)
+            
+            if self.validation_proportion is not None:
+                epoch_error_val = self.calculate_error_epoc(X_val, y_val)
+                
+                if len(self.epoch_error_val) > 0:
+                    if epoch_error_val >= self.epoch_error_val[-1]:
+                        impaciencia_acumulada += 1
+                    else:
+                        impaciencia_acumulada = 0
+                
+                self.epoch_error_val.append(epoch_error_val)
+                
+            
             if es_clasificacion:
                 epoch_classification_error = 1 - self.score(X, y)
                 self.epoch_classification_error.append(epoch_classification_error)
             #print(f"Época: {epoch} - Errorcito: {epoch_error}")
             self.epoch_error.append(epoch_error)
-            if epoch_error < self.error_threshold:
+            if epoch_error < self.error_threshold or impaciencia_acumulada > self.paciencia:
                 break
 
     def transform(self, X):
