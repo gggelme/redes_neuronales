@@ -99,13 +99,14 @@ class neural_network():
                     activation_function = activation
                 )
             )
+        self.W_save = []
         self.max_epoch = max_epoch
         self.learning_rate = learning_rate
         self.error_threshold = error_threshold
         self.paciencia = paciencia
         self.epoch_error = []
         self.epoch_classification_error = []
-        self.epoch_error_val = []
+        self.epoch_metric_val = []
         self.validation_proportion = validation_proportion
         self.idx_shuffle = None
 
@@ -145,15 +146,20 @@ class neural_network():
             epoch_error = self.calculate_error_epoc(X, y)
             
             if self.validation_proportion is not None:
-                epoch_error_val = self.calculate_error_epoc(X_val, y_val)
+                # USAR METRICA, NO ERROR (LISTO)
+                CM = self.confusion_matrix(X_val, y_val)
+                TP, TN, FP, FN = self.obtener_conteos_globales(CM)
+                sensibilidad = TP / (TP + FN)
                 
-                if len(self.epoch_error_val) > 0:
-                    if epoch_error_val >= self.epoch_error_val[-1]:
+                if len(self.epoch_metric_val) > 0:
+                    if sensibilidad <= self.epoch_metric_val[-1]:
+                        # HAY QUE GUARDAR EL MEJOR HASTA AHORA A (LISTO)
                         impaciencia_acumulada += 1
                     else:
+                        self.save_weights()
                         impaciencia_acumulada = 0
                 
-                self.epoch_error_val.append(epoch_error_val)
+                self.epoch_metric_val.append(sensibilidad)
                 
             
             if es_clasificacion:
@@ -161,8 +167,14 @@ class neural_network():
                 self.epoch_classification_error.append(epoch_classification_error)
             #print(f"Época: {epoch} - Errorcito: {epoch_error}")
             self.epoch_error.append(epoch_error)
-            if epoch_error < self.error_threshold or impaciencia_acumulada > self.paciencia:
+            if epoch_error < self.error_threshold:
+                print(f"ENTRENAMIENTO TERMINADO POR UMBRAL. ÉPOCA: {epoch}")
                 break
+            if impaciencia_acumulada > self.paciencia:
+                self.charge_weights()
+                print(f"ENTRENAMIENTO TERMINADO POR PACIENCIA. ÉPOCA {epoch}")
+                break
+            # PONER SI CORTÓ POR ERROR_THRESHOLD O POR PACIENCIA (LISTO)
 
     def transform(self, X):
         """Retorna las predicciones considerando como"""
@@ -173,6 +185,28 @@ class neural_network():
 
         return np.array(y_pred)
          
+    def obtener_conteos_globales(self, cm):
+        n = cm.shape[0]
+        total = np.sum(cm)
+
+        TP = np.diag(cm)
+        # Como en la suma incluímos los verdaderos positivos, tenemos que restarlos
+        FN = np.sum(cm, axis=1) - TP # Sumamos toda la fila para cada columna.
+        FP = np.sum(cm, axis=0) - TP # Sumamos toda la columna para cada fila
+        TN = total - (TP + FN + FP)
+
+        return np.sum(TP), np.sum(TN), np.sum(FP), np.sum(FN)
+    
+    def save_weights(self):
+        W_save = [] 
+        for i in range(len(self.layers)):
+            W_save.append(self.layers[i].weights)
+        self.W_save = W_save.copy()
+
+    def charge_weights(self):
+        for i in range(len(self.layers)):
+            self.layers[i].weights = self.W_save[i]
+
     def confusion_matrix(self, X, y):
         correct = 0
         total = len(X)
@@ -270,7 +304,7 @@ class neural_network():
 
 
         if n_salidas == 1 and not es_clasificacion:
-            # regresión → usamos MSE como score
+            # regresión usamos MSE como score
             error = 0.0
 
             for i in range(total):
